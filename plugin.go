@@ -31,6 +31,8 @@ type (
 		StartAtTask       string
 		Tags              string
 		ExtraVars         []string
+		ExtraVarsFromFile string
+		ExtraVarsFile     string
 		ModulePath        []string
 		Check             bool
 		Diff              bool
@@ -79,6 +81,14 @@ func (p *Plugin) Exec() error {
 		}
 
 		defer os.Remove(p.Config.PrivateKeyFile)
+	}
+
+	if p.Config.ExtraVarsFromFile != "" {
+		if err := p.extraVarsFile(); err != nil {
+			return err
+		}
+
+		defer os.Remove(p.Config.ExtraVarsFile)
 	}
 
 	if p.Config.VaultPassword != "" {
@@ -150,6 +160,25 @@ func (p *Plugin) privateKey() error {
 	}
 
 	p.Config.PrivateKeyFile = tmpfile.Name()
+	return nil
+}
+
+func (p *Plugin) extraVarsFile() error {
+	tmpfile, err := ioutil.TempFile("", "extraVarsFile.*.yml")
+
+	if err != nil {
+		return errors.Wrap(err, "failed to create extra vars file")
+	}
+
+	if _, err := tmpfile.Write([]byte(p.Config.ExtraVarsFromFile)); err != nil {
+		return errors.Wrap(err, "failed to write extra vars file")
+	}
+
+	if err := tmpfile.Close(); err != nil {
+		return errors.Wrap(err, "failed to close extra vars file")
+	}
+
+	p.Config.ExtraVarsFile = tmpfile.Name()
 	return nil
 }
 
@@ -262,6 +291,10 @@ func (p *Plugin) ansibleCommand(inventory string) *exec.Cmd {
 
 	for _, v := range p.Config.ExtraVars {
 		args = append(args, "--extra-vars", v)
+	}
+
+	if p.Config.ExtraVarsFile != "" {
+		args = append(args, "--extra-vars", "@" + p.Config.ExtraVarsFile)
 	}
 
 	if p.Config.Check {

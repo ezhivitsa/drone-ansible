@@ -65,6 +65,11 @@ func main() {
 			EnvVar: "PLUGIN_EXTRA_VARS,ANSIBLE_EXTRA_VARS",
 		},
 		cli.StringSliceFlag{
+			Name:   "extra-vars-from-file",
+			Usage:  "set additional variables that will be passed as file",
+			EnvVar: "PLUGIN_EXTRA_VARS_FROM_FILE,ANSIBLE_EXTRA_VARS_FROM_FILE",
+		},
+		cli.StringSliceFlag{
 			Name:   "module-path",
 			Usage:  "prepend paths to module library",
 			EnvVar: "PLUGIN_MODULE_PATH",
